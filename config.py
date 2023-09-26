@@ -1,9 +1,8 @@
-# Configurations for the evolutionary simulation
+# config.py
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 RESOURCE_COLOR = (0, 255, 0)
-BACKGROUND_COLOR = [128, 128, 128]  # Changed to list
-ENERGY_FROM_RESOURCE = 50
+BACKGROUND_COLOR = (128, 128, 128)
 AGENT_SPEED = 2
 RESOURCE_SPAWN_RATE = 100
 VISION_PIXELS = 10

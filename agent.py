@@ -1,44 +1,45 @@
 import numpy as np
 import math
 import random
-from vision_transforms import perspective_transform, get_frustum_coordinates
+from vision_transforms import perspective_transform
+from config import VISION_PIXELS, VISION_RANGE, BACKGROUND_COLOR
 
 class Agent:
-    def __init__(self, x, y, angle=0, energy=100, vision_pixels=10, vision_range=100):
+    def __init__(self, x, y, angle=0, energy=100):
         self.x = x
         self.y = y
         self.angle = angle
         self.energy = energy
         self.color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-        self.vision_field = np.full((vision_pixels, 3), [128, 128, 128], dtype=np.uint8)  # Initialize to gray
-        self.z_buffer = np.full(vision_pixels, np.inf)  # Initialize z-buffer
+        self.vision_field = np.empty([VISION_PIXELS, 3], dtype=int)
+        self.vision_field[:] = BACKGROUND_COLOR
+        self.z_buffer = np.full(VISION_PIXELS, np.inf)
 
-    def move(self):
-        self.x += 2 * math.cos(self.angle)
-        self.y += 2 * math.sin(self.angle)
-        self.x = int(self.x) % 800
-        self.y = int(self.y) % 600
+    def move(self, SCREEN_WIDTH, SCREEN_HEIGHT, AGENT_SPEED):
+        self.x = (self.x + AGENT_SPEED * math.cos(self.angle)) % SCREEN_WIDTH
+        self.y = (self.y + AGENT_SPEED * math.sin(self.angle)) % SCREEN_HEIGHT
 
     def collect_resource(self, resources):
         for resource in resources:
             distance = math.sqrt((self.x - resource.x)**2 + (self.y - resource.y)**2)
             if distance < 15:
-                self.energy += 50
+                self.energy += 50  # Amount of energy obtained from a resource
                 resources.remove(resource)
                 return
 
     def update_vision(self, resources, agents):
-        self.vision_field.fill(128)  # Reset to gray
-        self.z_buffer.fill(np.inf)  # Reset z-buffer
+        self.vision_field[:] = BACKGROUND_COLOR
+        self.z_buffer[:] = np.inf
 
-        for obj_list, color in [(resources, [0, 255, 0]), (agents, [0, 0, 255])]:
-            for obj in obj_list:
+        for object_list in [resources, agents]:
+            for obj in object_list:
                 if obj == self:
                     continue
-                dx = obj.x - self.x
-                dy = obj.y - self.y
-                world_coordinates = np.array([dx, dy, 1])
-                pixel_idx, _, perspective_y = perspective_transform(world_coordinates, 10, 100)
-                if pixel_idx is not None and perspective_y < self.z_buffer[pixel_idx]:
-                    self.vision_field[pixel_idx] = color
+                pixel_idx, perspective_x, perspective_y = perspective_transform(np.array([obj.x, obj.y, 1]), VISION_PIXELS, VISION_RANGE)
+                
+                if pixel_idx is None:
+                    continue
+
+                if perspective_y < self.z_buffer[pixel_idx]:
                     self.z_buffer[pixel_idx] = perspective_y
+                    self.vision_field[pixel_idx] = obj.color if isinstance(obj, Agent) else RESOURCE_COLOR
