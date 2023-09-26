@@ -26,3 +26,4 @@ Write-Host "Activating virtual environment..."
 # Install required packages
 Write-Host "Installing required packages..."
 pip install pygame
+pip install numpy
